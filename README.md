@@ -14,6 +14,7 @@ available, etc!
 
 ### Installing the bot locally
 If you have Node JS installed open up a terminal to the directory of the downloaded repo
+
 ```npm install```
 
 ```npm start```
