@@ -1,6 +1,12 @@
 request = require('request')
 fs = require('fs')
 config = 'config.json'
+requiredFiles = {}
+botActions={}
+for file in fs.readdirSync "bot_actions/" when file isnt 'index.coffee'
+    filneame= file.replace /\.coffee$/, ""
+   # filename= requiredFiles[file.replace /\.coffee$/, ""] 
+    botActions[filneame]= require "../bot_actions/#{filneame}"
 
 config_file = ->
    fs.readFileSync config, 'utf8'
@@ -16,7 +22,8 @@ standard_req = {
     headers: {
       'User-Agent': 'hubot-watch'
     }
-  }
+}
+repo=config_data.repo
 
 module.exports = (robot) ->
  
@@ -28,12 +35,11 @@ module.exports = (robot) ->
   req_options = standard_req
   req_options.method="GET"
   req_options.url = "https://api.github.com/repos/#{repo}/events"
-
-  repo=config_data.repo
   
   request req_options, (err,response,obj) ->
     throw err if err
     if obj.message
+      console.log obj.message
      # res.send obj.message
     else
      watched[repo] = obj[0].id
@@ -42,6 +48,7 @@ module.exports = (robot) ->
   setInterval ->
     for repo of watched
       req_options.url = "https://api.github.com/repos/#{repo}/events"
+      console.log "checking repo"
       request req_options, (err, response, obj) ->
         if obj[0].id != watched[repo]
           robot.send '',repo + ": " + handleEvent obj[0] unless process.env.HUBOT_WATCH_IGNORED and process.env.HUBOT_WATCH_IGNORED.indexOf(obj[0].type) isnt -1
@@ -49,6 +56,7 @@ module.exports = (robot) ->
   ,5000
 
 handleEvent = (event) ->
+  console.log event.type
   switch event.type
     when "IssuesEvent"
       return "#{event.actor.login} #{event.payload.action} issue ##{event.payload.issue.number}: #{event.payload.issue.title}"
@@ -85,30 +93,13 @@ bot_check = (comment,pr) ->
     bot_arguments=bot_matches[3]
     console.log("action is "+bot_action)
     console.log("arguments are "+bot_arguments)
-    #switch based on action
-    switch bot_action
-      when "add_label" then label_action(bot_arguments,pr)
-      when "assign" then assign_action(bot_arguments,pr)
+   
+    if botActions.hasOwnProperty(bot_action)
+      executeBot= new botActions[bot_action](bot_arguments,pr)
+    else
+      console.log("Invalid bot action specified")
   else
     console.log("No bot found")
-
-label_action = (label_text, pr) ->
-  trimmed_labels=label_text.replace /\s/g, ""
-  labels=trimmed_labels.split ","
-
-  req_options = standard_req
-  req_options.body = labels
-  req_options.url = "https://api.github.com/repos/"+repo+"/issues/"+pr+"/labels"
-
-  request req_options, (err,response,obj) ->
-    throw err if err
-    if obj.message
-      console.log obj.message
-    else
-     console.log("labels were added successfully")
-  #test case if only one is submitted
-assign_action= (assignee) ->
-  console.log(assignee)
 
 handle_pr=(pr) ->
   creds=config_data.git.user+":"+config_data.git.password
