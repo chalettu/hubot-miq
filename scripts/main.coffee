@@ -1,7 +1,7 @@
 request = require('request')
 fs = require('fs')
 config = 'config.json'
-requiredFiles = {}
+
 botActions={}
 for file in fs.readdirSync "bot_actions/" when file isnt 'index.coffee'
     filneame= file.replace /\.coffee$/, ""
@@ -48,7 +48,7 @@ module.exports = (robot) ->
   setInterval ->
     for repo of watched
       req_options.url = "https://api.github.com/repos/#{repo}/events"
-      console.log "checking repo"
+     
       request req_options, (err, response, obj) ->
         if obj[0].id != watched[repo]
           robot.send '',repo + ": " + handleEvent obj[0] unless process.env.HUBOT_WATCH_IGNORED and process.env.HUBOT_WATCH_IGNORED.indexOf(obj[0].type) isnt -1
@@ -70,18 +70,6 @@ handleEvent = (event) ->
       return "#{event.actor.login} #{event.payload.action} pull request ##{event.payload.pull_request.number}: #{event.payload.pull_request}"
     when "PushEvent"
       return "#{event.actor.login} pushed to #{event.payload.ref.replace('refs/heads/','')}"
-    when "CreateEvent"
-      return "#{event.actor.login} created #{event.payload.ref_type} #{event.payload.ref}"
-    when "DeleteEvent"
-      return "#{event.actor.login} deleted #{event.payload.ref_type} #{event.payload.ref}"
-    when "GollumEvent"
-      return "#{event.actor.login} #{event.payload.pages[0].action} the wiki page: #{event.payload.pages[0].title}"
-    when "MemberEvent"
-      return "#{event.actor.login} #{event.payload.action} #{event.payload.member.login} to the collaborators"
-    when "WatchEvent"
-      return "#{event.actor.login} gave a star"
-    when "ForkEvent"
-      return "#{event.actor.login} forked to #{event.payload.forkee.full-name}"
     else
       return "Cannot handle event type: #{event.type}"
 
