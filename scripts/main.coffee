@@ -106,45 +106,58 @@ handle_pr=(pr) ->
   master_commit_id=pr.base.sha
   repo_url=pr.head.repo.html_url
   creds=standard_req.user+":"+standard_req.password
+  console.log "Handling PR"
   #at this point load the git pull functionality
-  s = spawn './git_pull.eslint.sh', [creds,repo,request_number]                        
-  s.stdout.on 'data', ( data ) -> 
+  s = spawn './git_pull.eslint.sh', [creds,repo,request_number]
+  s.on 'exit', (code) ->
+    if code is 0
+      console.log "Script execed fine"                       
+      eslint_file = ->
+        fs.readFileSync '/tmp/hubot_pull_requests/eslint_output.json', 'utf8'
+      comment_message="Checked commits "
     
-    eslint_file = ->
-      fs.readFileSync '/tmp/hubot_pull_requests/eslint_output.json', 'utf8'
-    comment_message="Checked commits "
-    eslint_data=JSON.parse(eslint_file())
-   
-    comment_message+="[#{repo_url}/compare/#{master_commit_id}...#{commit_id}](#{repo_url}/compare/#{master_commit_id}...#{commit_id})"
-    comment_message+=" with ruby "+eslint_data.metadata.ruby_version+", eslint "+eslint_data.metadata.eslint_version
-    comment_message+="\n #{eslint_data.summary.inspected_file_count} files checked, #{eslint_data.summary.offense_count} offenses detected \n"
-    if (eslint_data.summary.offense_count > 0)
-      file_messages=parse_eslint_messages(eslint_data.files,commit_id,repo_url)
-      comment_message+=file_messages
-    else
-      comment_message+="Everything looks good :thumbsup:"
-    req_options = BotBaseClass.standard_request()
-    req_options.body = {"body":comment_message}
-    req_options.method= "POST"
-    req_options.url = "https://api.github.com/repos/"+repo+"/issues/"+request_number+"/comments"
-
-    request req_options, (err,response,obj) ->
-      throw err if err
-      if obj.message
-        console.log obj.message
+      eslint_data=JSON.parse(eslint_file())
+      
+      comment_message+="[#{repo_url}/compare/#{master_commit_id}...#{commit_id}](#{repo_url}/compare/#{master_commit_id}...#{commit_id})"
+      comment_message+=" with eslint "
+    # comment_message+="\n #{eslint_data.summary.inspected_file_count} files checked, #{eslint_data.summary.offense_count} offenses detected \n"
+      #loop through get the count of errors and warnings
+      error_count=0
+      warning_count=0
+      for item in eslint_data
+        error_count+= item.errorCount
+        warning_count+= item.warningCount
+    
+      if (error_count > 0 or warning_count > 0)
+        comment_message+="\nWarnings - #{warning_count} Errors - #{error_count}\n"
+        comment_message+=parse_eslint_messages(eslint_data,commit_id,repo_url)
       else
-      console.log("Comment on ticket was successful")  
+        comment_message+="Everything looks good :thumbsup:"
+      
+      req_options = BotBaseClass.standard_request()
+      req_options.body = {"body":comment_message}
+      req_options.method= "POST"
+      req_options.url = "https://api.github.com/repos/"+repo+"/issues/"+request_number+"/comments"
+
+      request req_options, (err,response,obj) ->
+        throw err if err
+        if obj.message
+          console.log obj.message
+        else
+        console.log("Comment on ticket was successful")  
+
 
 parse_eslint_messages=(files,commit_id,repo_url) ->
   msg_text=""
-  for ruby_file in files
-    msg_text+="""
-    \n :warning: **Path : #{ruby_file.path}** \n
-    """
-    for offense in ruby_file.offenses
-      line=offense.location.line
-      col=offense.location.column
+  for js_file in files
+    file_path=js_file.filePath.replace(/^.+\/tmp\/hubot_pull_requests\/eslint/,'');
+    msg_text+="\n :warning: **Path : #{file_path}** \n"
+    for error in js_file.messages
+      line=error.line
+      col=error.column
       msg_text+="""
-       [Line #{line}](#{repo_url}/blob/#{commit_id}/#{ruby_file.path}##{line}), Col #{col} - [#{offense.cop_name}](http://www.rubydoc.info/gems/eslint/0.37.2/eslint/Cop/#{offense.cop_name}) - #{offense.message}\n
+      [Line #{line}](#{repo_url}/blob/#{commit_id}/#{file_path}#L#{line}), Col #{col} - #{error.ruleId} - #{error.message} \n
       """
+
   return msg_text
+  
