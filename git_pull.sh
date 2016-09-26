@@ -1,3 +1,4 @@
+#!/bin/bash  
 
 DIR="/tmp/hubot_pull_requests"
 CREDS=$1
