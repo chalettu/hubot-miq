@@ -5,6 +5,7 @@ config = 'config.json'
 BotActionsClass= require "./bot_actions"
 BotBaseClass=new BotActionsClass()
 
+
 botActions={}
 for file in fs.readdirSync "bot_actions/" when file isnt 'index.coffee'
     filneame= file.replace /\.coffee$/, ""
@@ -21,6 +22,30 @@ module.exports = (robot) ->
   watch_req_options.method="GET"
   watch_req_options.url = "https://api.github.com/repos/#{repo}/events"
   
+  url           = require('url')
+  querystring   = require('querystring')
+
+  debug = true
+
+  robot.router.post "/hubot/github-repo-listener", (req, res) ->
+    try
+      #if (debug)
+       # robot.logger.info("Github post received: ", req)
+      eventBody =
+        type   : req.headers["x-github-event"]
+        signature   : req.headers["X-Hub-Signature"]
+        deliveryId  : req.headers["X-Github-Delivery"]
+        payload     : req.body
+        query       : querystring.parse(url.parse(req.url).query)
+
+      #robot.emit "github-repo-event", eventBody
+      handleEvent(eventBody)
+    catch error
+      robot.logger.error "Github repo webhook listener error: #{error.stack}. Request: #{req.body}"
+
+    res.end ""
+    #https://39a24c02.ngrok.io/hubot/github-repo-listener
+###
   request watch_req_options, (err,response,obj) ->
     throw err if err
     if obj.message
@@ -39,21 +64,20 @@ module.exports = (robot) ->
           robot.send '',repo + ": " + handleEvent obj[0] unless process.env.HUBOT_WATCH_IGNORED and process.env.HUBOT_WATCH_IGNORED.indexOf(obj[0].type) isnt -1
           watched[repo] = obj[0].id
   ,5000
-
+###
 handleEvent = (event) ->
   console.log event.type
+ # console.log JSON.stringify(event.payload)
   switch event.type
-    when "IssuesEvent"
-      return "#{event.actor.login} #{event.payload.action} issue ##{event.payload.issue.number}: #{event.payload.issue.title}"
-    when "IssueCommentEvent"
+    when "issue_comment"
       event_text=event.payload.comment.body
       pr=event.payload.issue.number
       bot_check(event_text,pr) 
-    when "PullRequestEvent"
+    when "pull_request"
       pr=event.payload.pull_request
       if pr.state isnt 'closed'
         handle_pr(pr)
-      return "#{event.actor.login} #{event.payload.action} pull request ##{event.payload.pull_request.number}: #{event.payload.pull_request}"
+     # return "#{event.actor.login} #{event.payload.action} pull request ##{event.payload.pull_request.number}: #{event.payload.pull_request}"
     when "PushEvent"
       console.log JSON.stringify(event)
      
@@ -102,62 +126,14 @@ handle_bot_action=(bot_text,pr) ->
 
 handle_pr=(pr) ->
   request_number=pr.number
-  commit_id=pr.head.sha
-  master_commit_id=pr.base.sha
-  repo_url=pr.head.repo.html_url
-  creds=standard_req.user+":"+standard_req.password
   console.log "Handling PR"
+  repo_info={
+    "commit_id":pr.head.sha,
+    "master_commit_id":pr.base.sha,
+    "creds":standard_req.user+":"+standard_req.password,
+    "repo_url":pr.head.repo.html_url
+  }
   #at this point load the git pull functionality
-  s = spawn './git_pull.eslint.sh', [creds,repo,request_number]
-  s.on 'exit', (code) ->
-    if code is 0
-      console.log "Script execed fine"                       
-      eslint_file = ->
-        fs.readFileSync '/tmp/hubot_pull_requests/eslint_output.json', 'utf8'
-      comment_message="Checked commits "
-    
-      eslint_data=JSON.parse(eslint_file())
-      
-      comment_message+="[#{repo_url}/compare/#{master_commit_id}...#{commit_id}](#{repo_url}/compare/#{master_commit_id}...#{commit_id})"
-      comment_message+=" with eslint "
-    # comment_message+="\n #{eslint_data.summary.inspected_file_count} files checked, #{eslint_data.summary.offense_count} offenses detected \n"
-      #loop through get the count of errors and warnings
-      error_count=0
-      warning_count=0
-      for item in eslint_data
-        error_count+= item.errorCount
-        warning_count+= item.warningCount
-    
-      if (error_count > 0 or warning_count > 0)
-        comment_message+="\nWarnings - #{warning_count} Errors - #{error_count}\n"
-        comment_message+=parse_eslint_messages(eslint_data,commit_id,repo_url)
-      else
-        comment_message+="Everything looks good :thumbsup:"
-      
-      req_options = BotBaseClass.standard_request()
-      req_options.body = {"body":comment_message}
-      req_options.method= "POST"
-      req_options.url = "https://api.github.com/repos/"+repo+"/issues/"+request_number+"/comments"
-
-      request req_options, (err,response,obj) ->
-        throw err if err
-        if obj.message
-          console.log obj.message
-        else
-        console.log("Comment on ticket was successful")  
-
-
-parse_eslint_messages=(files,commit_id,repo_url) ->
-  msg_text=""
-  for js_file in files
-    file_path=js_file.filePath.replace(/^.+\/tmp\/hubot_pull_requests\/eslint/,'');
-    msg_text+="\n :warning: **Path : #{file_path}** \n"
-    for error in js_file.messages
-      line=error.line
-      col=error.column
-      msg_text+="""
-      [Line #{line}](#{repo_url}/blob/#{commit_id}/#{file_path}#L#{line}), Col #{col} - #{error.ruleId} - #{error.message} \n
-      """
-
-  return msg_text
+  es_lint_class=require ("../code_linters/es_lint.coffee")
+  code_linting= new es_lint_class(request_number,repo_info)
   
