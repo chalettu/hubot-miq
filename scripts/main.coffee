@@ -16,11 +16,6 @@ standard_req=BotBaseClass.standard_request()
 repo=BotBaseClass.repo
 
 module.exports = (robot) ->
- 
-  watched = []
-  watch_req_options = standard_req
-  watch_req_options.method="GET"
-  watch_req_options.url = "https://api.github.com/repos/#{repo}/events"
   
   url           = require('url')
   querystring   = require('querystring')
@@ -45,26 +40,7 @@ module.exports = (robot) ->
 
     res.end ""
     #https://39a24c02.ngrok.io/hubot/github-repo-listener
-###
-  request watch_req_options, (err,response,obj) ->
-    throw err if err
-    if obj.message
-      console.log obj.message
-     # res.send obj.message
-    else
-     watched[repo] = obj[0].id
-     console.log(obj[0].id)
-  
-  setInterval ->
-    for repo of watched
-      watch_req_options.url = "https://api.github.com/repos/#{repo}/events"
-     
-      request watch_req_options, (err, response, obj) ->
-        if obj[0].id != watched[repo]
-          robot.send '',repo + ": " + handleEvent obj[0] unless process.env.HUBOT_WATCH_IGNORED and process.env.HUBOT_WATCH_IGNORED.indexOf(obj[0].type) isnt -1
-          watched[repo] = obj[0].id
-  ,5000
-###
+
 handleEvent = (event) ->
   console.log event.type
  # console.log JSON.stringify(event.payload)

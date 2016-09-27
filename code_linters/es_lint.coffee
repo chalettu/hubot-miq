@@ -13,8 +13,7 @@ module.exports =class es_lint extends BotActions
 
         s = spawn './git_pull.eslint.sh', [repo_info.creds,repo,request_number]
         s.on 'exit', (code) ->
-            if code is 0
-                console.log("parsed file")                     
+            if code is 0                    
                 eslint_file = ->
                     fs.readFileSync '/tmp/hubot_pull_requests/eslint_output.json', 'utf8'
                 comment_message="Checked commits "
@@ -27,11 +26,11 @@ module.exports =class es_lint extends BotActions
                 #loop through get the count of errors and warnings
                 error_count=0
                 warning_count=0
-                files_checked=eslint_data.length
+                files_checked=eslint_data.length - 1
                 for item in eslint_data
                     error_count+= item.errorCount
                     warning_count+= item.warningCount
-                issues_count=error_count+warning_count
+                issues_count=error_count+warning_count - 1
 
                 if (error_count > 0 or warning_count > 0)
                     comment_message+="\n #{files_checked} files checked, #{issues_count} offenses detected.\n"
@@ -47,17 +46,18 @@ module.exports =class es_lint extends BotActions
         msg_text=""
         for js_file in files
             file_path=js_file.filePath.replace(/^.+\/tmp\/hubot_pull_requests\/eslint/,'');
-            msg_text+="\n**#{file_path}** \n"
+            if file_path.indexOf("eslintrc.json") is -1
+                msg_text+="\n**#{file_path}** \n"
 
-            for error in js_file.messages
-                emoji= switch
-                    when error.severity==1 then ':grey_exclamation:'
-                    when error.severity==2 then ':exclamation:'
+                for error in js_file.messages
+                    emoji= switch
+                        when error.severity==1 then ':grey_exclamation:'
+                        when error.severity==2 then ':exclamation:'
 
-                line=error.line
-                col=error.column
-                msg_text+="""
-                - [ ] #{emoji} [Line #{line}](#{repo_url}/blob/#{commit_id}/#{file_path}#L#{line}), Col #{col} - [#{error.ruleId}](http://eslint.org/docs/rules/#{error.ruleId}) - #{error.message} \n
-                """
+                    line=error.line
+                    col=error.column
+                    msg_text+="""
+                    - [ ] #{emoji} [Line #{line}](#{repo_url}/blob/#{commit_id}/#{file_path}#L#{line}), Col #{col} - [#{error.ruleId}](http://eslint.org/docs/rules/#{error.ruleId}) - #{error.message} \n
+                    """
 
         return msg_text
