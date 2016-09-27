@@ -6,6 +6,9 @@
   "description": "A simple helpful robot for your Company",
   "dependencies": {
     "bz": "^0.4.5",
+    "eslint": "^3.6.1",
+    "eslint-config-angular": "^0.5.0",
+    "eslint-plugin-angular": "^1.4.1",
     "hubot": "^2.19.0",
     "hubot-diagnostics": "0.0.1",
     "hubot-google-images": "^0.2.6",
@@ -18,9 +21,11 @@
     "hubot-rules": "^0.1.1",
     "hubot-scripts": "^2.17.2",
     "hubot-shipit": "^0.2.0",
+    "querystring": "^0.2.0",
     "request": "^2.75.0",
     "request-promise": "^4.1.1",
-    "underscore": "^1.8.3"
+    "underscore": "^1.8.3",
+    "url": "^0.11.0"
   },
   "scripts": {
     "start": "bin/hubot",

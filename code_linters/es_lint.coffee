@@ -7,7 +7,7 @@ module.exports =class es_lint extends BotActions
     constructor: (request_number,repo_info)  ->
         self=this
         repo=@repo
-        shell_cmd = spawn 'eslint',['-v']
+        shell_cmd = spawn 'node_modules/.bin/eslint',['-v']
         shell_cmd.stdout.on 'data', ( data ) -> 
             eslint_version=data.toString()
 
