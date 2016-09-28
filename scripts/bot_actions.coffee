@@ -6,13 +6,25 @@ module.exports = class BotActions
     repo:""
     repo_admin:""
     config_data:""
-
-    constructor: (@name) ->
-       config_file = ->
-            fs.readFileSync config, 'utf8'
-        @config_data=JSON.parse(config_file())
-        @repo=config_data.repo
+    constructor:() ->
+        console.log "In constructor"   
+        if typeof process.env.REPO  isnt 'undefined'
+            @config_data={
+                "repo":process.env.REPO,
+                "repo_administrator":process.env.REPO_ADMINISTRATOR,
+                "git":{
+                    "user":process.env.GIT_USER,
+                    "password":process.env.GIT_PASSWORD
+                }
+            }    
+        else
+            config_file = ->
+                fs.readFileSync config, 'utf8'
+            @config_data=JSON.parse(config_file())
+       
     standard_request:() ->
+        config_data=@config_data
+        @repo=config_data.repo
         standard_req= {
                     json: true,
                     method:"POST",
@@ -24,9 +36,7 @@ module.exports = class BotActions
                         'User-Agent': 'hubot-watch'
                     }
                 }
-        config_file = ->
-            fs.readFileSync config, 'utf8'
-        config_data=JSON.parse(config_file())
+       
         @repo=config_data.repo
         @repo_admin=config_data.repo_administrator
         standard_req.auth.user=config_data.git.user
