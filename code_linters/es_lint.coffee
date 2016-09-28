@@ -6,14 +6,15 @@ eslint_version=""
 module.exports =class es_lint extends BotActions
     constructor: (request_number,repo_info)  ->
         self=this
-        repo=@repo
+        repo=repo_info.repo
         shell_cmd = spawn 'node_modules/.bin/eslint',['-v']
         shell_cmd.stdout.on 'data', ( data ) -> 
             eslint_version=data.toString()
-
         s = spawn './git_pull.eslint.sh', [repo_info.creds,repo,request_number]
+        s.stderr.on 'data', (data) ->
+            console.log data.toString()
         s.on 'exit', (code) ->
-            if code is 0                    
+            if code is 0                    
                 eslint_file = ->
                     fs.readFileSync '/tmp/hubot_pull_requests/eslint_output.json', 'utf8'
                 comment_message="Checked commits "

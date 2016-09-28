@@ -4,6 +4,7 @@ DIR="/tmp/hubot_pull_requests/eslint"
 CREDS=$1
 REPO=$2
 PR=$3
+
 root_dir=`pwd`
 echo $PWD
 if [ -d $DIR ]; then

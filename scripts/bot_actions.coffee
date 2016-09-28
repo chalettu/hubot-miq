@@ -5,9 +5,13 @@ request = require('request')
 module.exports = class BotActions
     repo:""
     repo_admin:""
+    config_data:""
 
     constructor: (@name) ->
-       
+       config_file = ->
+            fs.readFileSync config, 'utf8'
+        @config_data=JSON.parse(config_file())
+        @repo=config_data.repo
     standard_request:() ->
         standard_req= {
                     json: true,
@@ -29,7 +33,7 @@ module.exports = class BotActions
         standard_req.auth.password=config_data.git.password
 
         return standard_req 
-
+    
     assign_issue:(pr,assignee) ->
         req_options = @standard_request()
         req_options.body = {"assignees":[assignee]}
@@ -47,7 +51,7 @@ module.exports = class BotActions
         req_options = @standard_request()
         req_options.url = "https://api.github.com/repos/"+@repo+"/statuses/"+commit_id
         req_options.body ={"state":status}
-        
+
         @sleep(Math.random() * 1500)
         request req_options, (err,response,obj) ->
             throw err if err

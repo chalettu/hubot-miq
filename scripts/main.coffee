@@ -103,11 +103,13 @@ handle_bot_action=(bot_text,pr) ->
 handle_pr=(pr) ->
   request_number=pr.number
   console.log "Handling PR"
+  creds=standard_req.auth.user+":"+standard_req.auth.password
   repo_info={
     "commit_id":pr.head.sha,
     "master_commit_id":pr.base.sha,
-    "creds":standard_req.user+":"+standard_req.password,
-    "repo_url":pr.head.repo.html_url
+    "creds":creds,
+    "repo_url":pr.head.repo.html_url,
+    "repo":repo
   }
   #at this point load the git pull functionality
   es_lint_class=require ("../code_linters/es_lint.coffee")

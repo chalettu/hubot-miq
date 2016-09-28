@@ -1,8 +1,15 @@
-FROM ruby:2.3.0
+FROM node:4-onbuild
 
-RUN apt-get update; \ 
-    curl -sL https://deb.nodesource.com/setup_6.x | bash - ;\
-    apt-get install -y nodejs; \
-    gem install rubocop; \
-    git config --global --add remote.origin.fetch "+refs/pull/*/head:refs/remotes/origin/pr/*" \
-    node -v
+# Create app directory
+RUN mkdir -p /usr/src/app
+WORKDIR /usr/src/app
+
+# Install app dependencies
+COPY package.json /usr/src/app/
+RUN npm install
+
+# Bundle app source
+COPY . /usr/src/app
+
+EXPOSE 8080
+ENTRYPOINT bin/hubot
