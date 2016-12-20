@@ -77,7 +77,7 @@ handleEvent = (event) ->
       return "Cannot handle event type: #{event.type}"
 
 bot_check = (comment,pr) ->
-  bot_regex=/(@miq-bot)\s(\w*)\s(.*)/mg
+  bot_regex=/(@ui-bot)\s(\w*)\s(.*)/mg
   bot_matches=comment.match(bot_regex)
   if bot_matches=comment.match(bot_regex)
     console.log bot_matches
@@ -89,7 +89,7 @@ bot_check = (comment,pr) ->
   else
     console.log("No bot found")
 handle_bot_action=(bot_text,pr) ->
-  parse_bot_cmd=bot_text.match(/(@miq-bot)\s(\w*)\s(.*)/)
+  parse_bot_cmd=bot_text.match(/(@ui-bot)\s(\w*)\s(.*)/)
   bot_action=parse_bot_cmd[2]
   bot_arguments=parse_bot_cmd[3]
   console.log("action is "+bot_action)
