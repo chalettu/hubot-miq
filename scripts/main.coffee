@@ -112,6 +112,7 @@ handle_pr=(pr) ->
     "repo":repo
   }
   #at this point load the git pull functionality
-  es_lint_class=require ("../code_linters/es_lint.coffee")
-  code_linting= new es_lint_class(request_number,repo_info)
+  #commented out code linting for now
+  #es_lint_class=require ("../code_linters/es_lint.coffee")
+  #code_linting= new es_lint_class(request_number,repo_info)
   
