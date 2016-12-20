@@ -17,6 +17,7 @@ module.exports = class BotActions
                     "password":process.env.GIT_PASSWORD
                 }
             }    
+            console.log @config_data
         else
             config_file = ->
                 fs.readFileSync config, 'utf8'
@@ -39,6 +40,7 @@ module.exports = class BotActions
        
         @repo=config_data.repo
         @repo_admin=config_data.repo_administrator
+        console.log config_data.git.user
         standard_req.auth.user=config_data.git.user
         standard_req.auth.password=config_data.git.password
 
