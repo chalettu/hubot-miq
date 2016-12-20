@@ -2,7 +2,7 @@ request = require('request')
 BotActions= require "../scripts/bot_actions"
 module.exports =class remove_label_action extends BotActions
   constructor: (params, pr)  ->
-  
+    super()
     trimmed_labels=params.replace /\s/g, ""
     label=trimmed_labels.split ","
 

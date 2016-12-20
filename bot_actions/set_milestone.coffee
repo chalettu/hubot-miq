@@ -12,6 +12,7 @@ module.exports =class set_milestone_action extends BotActions
             console.log("Milestone added successfully")
 
     constructor: (params, pull_request)  ->
+        super()
         mainObj=this
         @pr=pull_request
         req_options = @standard_request()

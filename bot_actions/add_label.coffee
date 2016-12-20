@@ -5,6 +5,7 @@ BotActions= require "../scripts/bot_actions"
 module.exports =class add_label_action extends BotActions
   constructor: (params, pr)  ->
     console.log "Constructor loaded"
+    super()
     trimmed_labels=params.replace /\s/g, ""
     labels=trimmed_labels.split ","
     req_options = @standard_request()
